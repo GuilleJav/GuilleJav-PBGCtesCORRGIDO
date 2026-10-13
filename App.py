@@ -1,20 +1,9 @@
-import io
 import math
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from reportlab.lib.colors import HexColor, whitesmoke
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from reportlab.platypus import (
-    Paragraph,
-    SimpleDocTemplate,
-    Spacer,
-    Table,
-    TableStyle,
-)
 import streamlit as st
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
 from statsmodels.tsa.statespace.sarimax import SARIMAX
@@ -23,7 +12,7 @@ from statsmodels.tsa.statespace.sarimax import SARIMAX
 # Configuración de estilo global para gráficos Plotly adaptativos
 def aplicar_estilo_grafico(fig):
   fig.update_layout(
-      template="plotly_white",
+      template="plotly_white",  # Fondo limpio y legible
       font=dict(family="Arial, sans-serif", size=12, color="#2D3748"),
       title_font=dict(size=14, color="#1A365D"),
       paper_bgcolor="rgba(0,0,0,0)",
@@ -44,7 +33,7 @@ def aplicar_estilo_grafico(fig):
 
 
 # -----------------------------------------------------------------------------
-# 1. CONFIGURACIÓN DE PÁGINA Y ESTILOS CSS
+# 1. CONFIGURACIÓN DE PÁGINA Y ESTILOS CSS PARA KPIS ENMARCADOS
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="PBG Corrientes - Proyección y Memoria Metodológica 2025",
@@ -52,9 +41,11 @@ st.set_page_config(
     layout="wide",
 )
 
+# Inyección de CSS para recuadrar y destacar los KPIs superiores
 st.markdown(
     """
     <style>
+    /* Estilos para las tarjetas de métricas / KPIs */
     div[data-testid="stMetric"] {
         background-color: #F8FAFC;
         border: 1px solid #E2E8F0;
@@ -77,12 +68,6 @@ st.markdown(
         font-size: 22px !important;
         font-weight: 700 !important;
         color: #1A365D !important;
-    }
-    .stSlider {
-        background-color: #F8FAFC;
-        padding: 15px;
-        border-radius: 10px;
-        border: 1px solid #E2E8F0;
     }
     </style>
 """,
@@ -207,41 +192,16 @@ def generar_serie_y_modelo(df_in):
 df_ts, df_proj = generar_serie_y_modelo(df)
 
 pbg_2024_total = df_ts["PBG"].tail(4).sum()
-pbg_2025_base = df_proj["PBG"].sum()
+pbg_2025_total = df_proj["PBG"].sum()
+var_2025 = ((pbg_2025_total - pbg_2024_total) / pbg_2024_total) * 100
 
 # -----------------------------------------------------------------------------
-# 4. KPIS SUPERIORES Y SIMULADOR DE ESCENARIOS MACROECONÓMICOS
+# 4. KPIS SUPERIORES ENMARCADOS
 # -----------------------------------------------------------------------------
-st.sidebar.header("Simulador de Escenarios 2025")
-st.sidebar.caption(
-    "Ajusta el sesgo macroeconómico/agroclimático estimado para simular el"
-    " impacto en el PBG proyectado."
-)
-shock_pct = st.sidebar.slider(
-    "Sensibilidad / Shock Exógeno (%)",
-    min_value=-5.0,
-    max_value=5.0,
-    value=0.0,
-    step=0.5,
-    help=(
-        "Simula variaciones en los sectores primario e hidroeléctrico por"
-        " factores exógenos (clima, demanda nacional, etc.)."
-    ),
-)
-
-pbg_2025_simulado = pbg_2025_base * (1 + (shock_pct / 100))
-var_2025_simulada = (
-    (pbg_2025_simulado - pbg_2024_total) / pbg_2024_total
-) * 100
-
 k1, k2, k3, k4 = st.columns(4)
 k1.metric("PBG Anual 2024 (Real)", f"${pbg_2024_total:,.0f} Miles$")
-k2.metric(
-    "PBG 2025 (Simulado / Proyectado)",
-    f"${pbg_2025_simulado:,.0f} Miles$",
-    delta=f"{shock_pct:+.1f}% vs Modelo Base" if shock_pct != 0 else None,
-)
-k3.metric("Crecimiento Estimado 2025", f"{var_2025_simulada:+.2f}%")
+k2.metric("PBG Anual 2025 (Proyectado)", f"${pbg_2025_total:,.0f} Miles$")
+k3.metric("Crecimiento Estimado 2025", f"{var_2025:+.2f}%")
 k4.metric("Período Base", "2004 = 100")
 
 st.markdown("---")
@@ -267,11 +227,6 @@ with tab_principal:
       " últimos años y la serie completa (2004-2025)."
   )
 
-  df_proj_sim = df_proj.copy()
-  df_proj_sim["PBG"] = df_proj_sim["PBG"] * (1 + (shock_pct / 100))
-  df_proj_sim["Upper_CI"] = df_proj_sim["Upper_CI"] * (1 + (shock_pct / 100))
-  df_proj_sim["Lower_CI"] = df_proj_sim["Lower_CI"] * (1 + (shock_pct / 100))
-
   fig_fan = go.Figure()
 
   # 1. Serie Histórica COMPLETA (2004-2024)
@@ -291,10 +246,10 @@ with tab_principal:
   last_date = df_ts.index[-1]
   last_val = df_ts["PBG"].iloc[-1]
 
-  x_proj = [last_date] + list(df_proj_sim.index)
-  y_proj = [last_val] + list(df_proj_sim["PBG"])
-  upper_ci = [last_val] + list(df_proj_sim["Upper_CI"])
-  lower_ci = [last_val] + list(df_proj_sim["Lower_CI"])
+  x_proj = [last_date] + list(df_proj.index)
+  y_proj = [last_val] + list(df_proj["PBG"])
+  upper_ci = [last_val] + list(df_proj["Upper_CI"])
+  lower_ci = [last_val] + list(df_proj["Lower_CI"])
 
   # Banda Sombreada de Incertidumbre (Fan)
   fig_fan.add_trace(
@@ -322,6 +277,7 @@ with tab_principal:
       )
   )
 
+  # Configuración con Botones de Selección Rápida (sin Range Slider)
   fig_fan.update_layout(
       xaxis_title="Año / Trimestre",
       yaxis_title="Miles de Pesos a Precios Constantes de 2004",
@@ -360,8 +316,9 @@ with tab_principal:
       ),
   )
 
+  # Vista inicial enfocada en los últimos 6 años
   initial_start = df_ts.index[-24]
-  initial_end = df_proj_sim.index[-1]
+  initial_end = df_proj.index[-1]
   fig_fan.update_xaxes(range=[initial_start, initial_end])
 
   st.plotly_chart(fig_fan, use_container_width=True)
@@ -380,7 +337,7 @@ with tab_principal:
             df_anual,
             pd.DataFrame({
                 "Fecha": [pd.Timestamp("2025-12-31")],
-                "PBG": [pbg_2025_simulado],
+                "PBG": [pbg_2025_total],
                 "Año": [2025],
             }),
         ],
@@ -672,8 +629,8 @@ with tab_diagnostico:
       df_comp = pd.DataFrame([
           {
               "Modelo": "SARIMAX(1,1,1)(1,1,1)[4] (Seleccionado)",
-              "PBG 2025 (Miles $)": pbg_2025_base,
-              "Crecimiento Real": f"{((pbg_2025_base - pbg_2024_total)/pbg_2024_total)*100:+.2f}%",
+              "PBG 2025 (Miles $)": pbg_2025_total,
+              "Crecimiento Real": f"{var_2025:+.2f}%",
           },
           {
               "Modelo": "Holt-Winters Estacional (Alternativo)",
@@ -684,7 +641,7 @@ with tab_diagnostico:
       st.table(df_comp)
 
 # =============================================================================
-# PESTAÑA 3: MEMORIA METODOLÓGICA Y GENERACIÓN DE PDF
+# PESTAÑA 3: MEMORIA METODOLÓGICA
 # =============================================================================
 with tab_memoria:
   st.header("📋 Memoria Metodológica y Documentación del Entregable")
@@ -695,98 +652,6 @@ with tab_memoria:
   )
   st.markdown("---")
 
-  # Función para generar reporte PDF dinámico sin conflictos de tipo
-  def generar_pdf_reporte():
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(
-        buffer,
-        pagesize=letter,
-        rightMargin=40,
-        leftMargin=40,
-        topMargin=40,
-        bottomMargin=40,
-    )
-    styles = getSampleStyleSheet()
-
-    title_style = ParagraphStyle(
-        "TitleStyle",
-        parent=styles["Heading1"],
-        fontSize=16,
-        leading=20,
-        textColor=HexColor("#1A365D"),
-        spaceAfter=10,
-    )
-
-    body_style = ParagraphStyle(
-        "BodyStyle",
-        parent=styles["Normal"],
-        fontSize=10,
-        leading=14,
-        textColor=HexColor("#2D3748"),
-        spaceAfter=8,
-    )
-
-    story = []
-    story.append(
-        Paragraph("<b>INFORME EJECUTIVO: PROYECCIÓN PBG CORRIENTES 2025</b>", title_style)
-    )
-    story.append(
-        Paragraph("<i>Instituto de Modernización e Innovación - Provincia de Corrientes</i>", body_style)
-    )
-    story.append(Spacer(1, 12))
-
-    data_summary = [
-        ["Indicador Macroeconómico", "Valor Estimado (Miles de $)"],
-        ["PBG Consolidado Real 2024", f"${pbg_2024_total:,.2f}"],
-        ["PBG Proyectado 2025 (Modelo SARIMAX)", f"${pbg_2025_base:,.2f}"],
-        [
-            "Crecimiento Real Estimado",
-            f"{((pbg_2025_base - pbg_2024_total)/pbg_2024_total)*100:+.2f}%",
-        ],
-        ["Período Base Contable", "Año 2004 = 100"],
-    ]
-
-    t = Table(data_summary, colWidths=[280, 220])
-    t.setStyle(
-        TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), HexColor("#1A365D")),
-            ("TEXTCOLOR", (0, 0), (-1, 0), whitesmoke),
-            ("ALIGN", (0, 0), (-1, -1), "LEFT"),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, -1), 10),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-            ("BACKGROUND", (0, 1), (-1, -1), HexColor("#F8FAFC")),
-            ("GRID", (0, 0), (-1, -1), 0.5, HexColor("#E2E8F0")),
-        ])
-    )
-    story.append(t)
-    story.append(Spacer(1, 15))
-
-    story.append(Paragraph("<b>Síntesis Metodológica y Diagnóstico:</b>", body_style))
-    story.append(
-        Paragraph(
-            "El modelo econométrico seleccionado corresponde a un proceso de"
-            " Series de Tiempo Estacionales SARIMAX(1,1,1)(1,1,1)[4] ajustado"
-            " sobre la serie histórica trimestral de 84 observaciones (2004-2024)."
-            " Las pruebas de Backtesting ex-post para el año 2024 mostraron un"
-            " MAPE de 1,40%, validando una precisión del 98,60% en la tasa de"
-            " proyección.",
-            body_style,
-        )
-    )
-
-    doc.build(story)
-    buffer.seek(0)
-    return buffer
-
-  st.download_button(
-      label="📄 Exportar Informe Ejecutivo de Proyección (.PDF)",
-      data=generar_pdf_reporte(),
-      file_name="Informe_Ejecutivo_PBG_Corrientes_2025.pdf",
-      mime="application/pdf",
-  )
-
-  st.markdown("<br>", unsafe_allow_html=True)
   m_col1, m_col2 = st.columns(2)
 
   with m_col1:
@@ -832,13 +697,13 @@ with tab_memoria:
 
     st.subheader("6. Reproducibilidad y Código Fuente")
     st.markdown("""
-        * **Librerías Utilizadas:** Python 3.12+, `streamlit`, `pandas`, `plotly`, `statsmodels`, `reportlab`.
+        * **Librerías Utilizadas:** Python 3.12+, `streamlit`, `pandas`, `plotly`, `statsmodels`.
         * **Dataset Consolidado:** `pbg_corrientes.csv` (84 trimestres en codificación `latin1`).
         * **Repositorio GitHub:** Proyecto de código abierto disponible para auditoría ex-post.
         """)
 
 # -----------------------------------------------------------------------------
-# 6. BOTÓN DE DESCARGA GLOBAL CSV
+# 6. BOTÓN DE DESCARGA GLOBAL
 # -----------------------------------------------------------------------------
 st.markdown("---")
 
