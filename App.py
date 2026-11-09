@@ -286,7 +286,7 @@ tab_principal, tab_diagnostico, tab_memoria = st.tabs([
 # =============================================================================
 with tab_principal:
   st.subheader(
-      "1. Fan Chart: Proyección del PBG 2025 con Banda de Incertidumbre (95% IC)"
+      "Proyección del PBG 2025 con Banda de Incertidumbre (95% IC)"
   )
   st.caption(
       "Utiliza los botones de rango superior para alternar la vista entre los"
@@ -395,7 +395,7 @@ with tab_principal:
 
   c1, c2 = st.columns(2)
   with c1:
-    st.subheader("2. Crecimiento Real Interanual (%)")
+    st.subheader("Crecimiento Real Interanual (%)")
 
     try:
       df_anual = df_ts.resample("YE")["PBG"].sum().reset_index()
@@ -462,7 +462,7 @@ with tab_principal:
     st.plotly_chart(fig_var, use_container_width=True)
 
   with c2:
-    st.subheader("3. Estructura Sectorial (4.° trimestre 2024)")
+    st.subheader("Estructura Sectorial (4.° trimestre 2024)")
     df_sec_2024 = df_sectores[["Descripción", "2024_4"]].copy()
     df_sec_2024.columns = ["Sector", "VAB"]
     df_sec_2024 = df_sec_2024.sort_values(by="VAB", ascending=True)
@@ -490,7 +490,7 @@ with tab_principal:
     st.plotly_chart(fig_hbar, use_container_width=True)
 
   st.subheader(
-      "4. Small Multiples por Sector: Trayectoria de cada Actividad (2004–2024)"
+      "Small Multiples por Sector: Trayectoria de cada Actividad (2004–2024)"
   )
   sectores_list = df_sectores["Descripción"].tolist()
   num_sectores = len(sectores_list)
@@ -721,7 +721,7 @@ with tab_diagnostico:
     st.plotly_chart(fig_sens, use_container_width=True)
 
   with sub_t3:
-    st.subheader("Contribución Sectorial Ponderada al Crecimiento (p.p.)")
+    st.subheader("Contribución Sectorial Ponderada al Crecimiento p.p.)")
     st.caption(
         "Mide cuántos puntos porcentuales aporta cada actividad al crecimiento"
         " del PBG provincial total."
@@ -848,7 +848,7 @@ with tab_diagnostico:
 # PESTAÑA 3: MEMORIA METODOLÓGICA (ACTUALIZADA CON ÚLTIMOS CAMBIOS)
 # =============================================================================
 with tab_memoria:
-  st.header("Memoria Metodológica y Documentación del Entregable")
+  st.header("Memoria Metodológica y Documentación del Tablero")
   st.markdown(
       "Esta sección documenta formalmente los aspectos técnicos, la fuente de"
       " datos, las transformaciones, la especificación matemática del modelo,"
@@ -873,7 +873,7 @@ with tab_memoria:
     st.subheader("2. Transformación y Tratamiento de la Serie")
     st.markdown("""
         * **Moneda Base:** Expresada en Valor Agregado Bruto (VAB) a **Precios Constantes del Año Base 2004** en miles de pesos.
-        * **Tratamiento de Datos:** La serie no presentó datos faltantes (*missing values*). Se procesó la conversión de notación regional (separadores de miles por punto y decimales por coma) a flotantes de alta precisión `float64`.
+        * **Tratamiento de Datos:** La serie no presentó datos faltantes (*missing values*). Se procesó la conversión de notación regional (separadores de miles por punto y decimales por coma) a flotantes de alta precisión.
         * **Estructura Desglosada:** Se conservó la clasificación CIIU adaptada a la contabilidad provincial con sus 80 renglones de apertura económica.
         """)
 
@@ -897,9 +897,9 @@ with tab_memoria:
 
     st.subheader("5. Estructura de Entregables y Descarga de Datasets")
     st.markdown("""
-        El tablero proporciona dos botones de descarga independientes con formato regional idéntico (`latin1`, delimitador `;` y decimales con coma):
+        El tablero proporciona dos botones de descarga independientes:
         * **`pbg_corrientes_historico_2004_2024.csv` (📊):** Dataset original oficial publicado con los 84 trimestres observados (2004–2024).
-        * **`estimacion_2025.csv` (🔮):** Dataset proyectado con las mismas 80 actividades del archivo fuente, conteniendo los valores estimados para `2025_1`, `2025_2`, `2025_3` y `2025_4`.
+        * **`estimacion_2025.csv` (🔮):** Dataset proyectado con las mismas 80 actividades del archivo fuente, conteniendo los valores estimados para `1_2025`, `2_2025`, `3_2025` y `4_2025`.
         """)
 
     st.subheader("6. Reproducibilidad y Código Fuente")
