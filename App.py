@@ -641,7 +641,7 @@ with tab_diagnostico:
     df_display_bt["Diferencia en Crecimiento (p.p.)"] = df_display_bt[
         "Diferencia en Crecimiento (p.p.)"
     ].apply(lambda x: f"{x:+.2f}".replace(".", ",") + " p.p.")
-    df_display_bt["MAPE Trimestral (%)"] = df_display_bt[
+    df_display_bt["Error Porcentual Anual (%)"] = df_display_bt[
         "MAPE Trimestral (%)"
     ].apply(lambda x: f"{x:.2f}%".replace(".", ","))
 
